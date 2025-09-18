@@ -6,7 +6,7 @@ export default function Home() {
       {/* Header */}
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-3">
-          <h1 className="text-lg font-semibold text-card-foreground">AI Crafters Lab — Matching POC</h1>
+          <h1 className="text-lg font-semibold text-card-foreground">Matchin Invoice-Receipt</h1>
         </div>
       </header>
 
@@ -18,7 +18,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-border bg-card mt-auto">
         <div className="container mx-auto px-4 py-2">
-          <p className="text-sm text-muted-foreground text-center">POC — n8n + Gemini — © 2025 AI Crafters Lab</p>
+          <p className="text-sm text-muted-foreground text-center">© 2025 Patrick Morin</p>
         </div>
       </footer>
     </div>
