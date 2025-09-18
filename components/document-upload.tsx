@@ -5,11 +5,15 @@ import type React from "react"
 import { useState, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Upload, FileText, FileSpreadsheet, Loader2, CheckCircle, XCircle } from "lucide-react"
+import { Upload, FileText, FileSpreadsheet, Loader2, CheckCircle, XCircle, Wifi } from "lucide-react"
 
+type Environment = "test" | "production"
 type DocumentType = "facture" | "bon de reception"
 type UploadStatus = "idle" | "uploading" | "success" | "error"
+type TestStatus = "idle" | "testing" | "success" | "error"
 
 interface FileInfo {
   file: File
@@ -21,10 +25,13 @@ interface FileInfo {
 const MAX_FILE_SIZE = 15 * 1024 * 1024 // 15 MB
 
 export default function DocumentUpload() {
+  const [environment, setEnvironment] = useState<Environment>("test")
   const [selectedFile, setSelectedFile] = useState<FileInfo | null>(null)
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>("idle")
   const [statusMessage, setStatusMessage] = useState("")
   const [dragActive, setDragActive] = useState(false)
+  const [testStatus, setTestStatus] = useState<TestStatus>("idle")
+  const [testMessage, setTestMessage] = useState("")
 
   const getDocumentType = (fileName: string): DocumentType | null => {
     const extension = fileName.toLowerCase().split(".").pop()
@@ -117,6 +124,7 @@ export default function DocumentUpload() {
     const formData = new FormData()
     formData.append("file", selectedFile.file)
     formData.append("documentType", selectedFile.type)
+    formData.append("environment", environment)
 
     try {
       const response = await fetch("/api/upload", {
@@ -147,6 +155,29 @@ export default function DocumentUpload() {
     }
   }
 
+  const handleTestConnectivity = async () => {
+    setTestStatus("testing")
+    setTestMessage("Test de connectivité en cours...")
+
+    try {
+      const response = await fetch(`/api/upload?environment=${environment}`, {
+        method: "GET",
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        setTestStatus("success")
+        setTestMessage(`Connectivité ${environment} : OK`)
+      } else {
+        throw new Error(result.error || "Erreur de connectivité")
+      }
+    } catch (error) {
+      setTestStatus("error")
+      setTestMessage(`Erreur de connectivité : ${error instanceof Error ? error.message : "Erreur inconnue"}`)
+    }
+  }
+
   const resetUpload = () => {
     setSelectedFile(null)
     setUploadStatus("idle")
@@ -165,6 +196,68 @@ export default function DocumentUpload() {
         </CardHeader>
 
         <CardContent className="space-y-6">
+          {/* Environment Selector */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium text-card-foreground">Environnement</Label>
+            <RadioGroup
+              value={environment}
+              onValueChange={(value) => setEnvironment(value as Environment)}
+              className="flex gap-6"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="test" id="test" />
+                <Label htmlFor="test">Test</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="production" id="production" />
+                <Label htmlFor="production">Production</Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {/* Test Connectivity Button */}
+          <div className="flex gap-3">
+            <Button
+              onClick={handleTestConnectivity}
+              disabled={testStatus === "testing"}
+              variant="outline"
+              className="flex-1 bg-transparent"
+            >
+              {testStatus === "testing" ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Test en cours...
+                </>
+              ) : (
+                <>
+                  <Wifi className="mr-2 h-4 w-4" />
+                  Tester la connectivité
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Test Status Message */}
+          {testMessage && (
+            <Alert
+              className={
+                testStatus === "error" ? "border-destructive" : testStatus === "success" ? "border-green-500" : ""
+              }
+            >
+              <div className="flex items-center gap-2">
+                {testStatus === "success" && <CheckCircle className="h-4 w-4 text-green-500" />}
+                {testStatus === "error" && <XCircle className="h-4 w-4 text-destructive" />}
+                <AlertDescription
+                  className={
+                    testStatus === "error" ? "text-destructive" : testStatus === "success" ? "text-green-600" : ""
+                  }
+                >
+                  {testMessage}
+                </AlertDescription>
+              </div>
+            </Alert>
+          )}
+
           {/* File Upload Area */}
           <div
             className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
