@@ -9,7 +9,7 @@ import "./globals.css"
 export const metadata: Metadata = {
   title: "Patrick Morin",
   description: "Document Upload Application",
-  generator: "v0.app",
+  generator: "app",
 }
 
 export default function RootLayout({
